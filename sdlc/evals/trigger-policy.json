@@ -1,0 +1,14 @@
+{
+  "name": "trigger-policy",
+  "description": "Prompt này phải kích hoạt skill policy đầu tiên; check fail nếu mô tả skill bị sai hoặc routing hỏng.",
+  "source": "trigger",
+  "prompt": "Biến chuẩn bảo mật API của công ty thành quy tắc Claude luôn áp",
+  "max_turns": 3,
+  "allowed_tools": "Read,Glob,Grep,Skill",
+  "checks": [
+    {
+      "type": "skill_first",
+      "skill": "ai-native-sdlc:policy"
+    }
+  ]
+}

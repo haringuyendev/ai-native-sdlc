@@ -1,0 +1,14 @@
+{
+  "name": "trigger-verify",
+  "description": "Prompt này phải kích hoạt skill verify đầu tiên; check fail nếu mô tả skill bị sai hoặc routing hỏng.",
+  "source": "trigger",
+  "prompt": "Sửa xong rồi đúng không? commit luôn đi",
+  "max_turns": 3,
+  "allowed_tools": "Read,Glob,Grep,Skill",
+  "checks": [
+    {
+      "type": "skill_first",
+      "skill": "ai-native-sdlc:verify"
+    }
+  ]
+}

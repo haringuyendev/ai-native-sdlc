@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ai-native-sdlc spec</title>
+  <style>
+    /*
+     * Page wrapper for fragment screens of the visual companion.
+     * server.cjs swaps the BRANDING marker for the plugin badge and drops the
+     * fragment in at the CONTENT marker. The classes below are the vocabulary
+     * listed in visual-companion.md; keep the two in step.
+     */
+
+    /* --- palette: light by default, dark when the OS asks for it --- */
+    :root {
+      --bg-primary: #f5f5f7;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e5e5e7;
+      --border: #d1d1d6;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --text-tertiary: #aeaeb2;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --success: #34c759;
+      --warning: #ff9f0a;
+      --error: #ff3b30;
+      --selected-bg: #e8f4fd;
+      --selected-border: #0071e3;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1d1d1f;
+        --bg-secondary: #2d2d2f;
+        --bg-tertiary: #3d3d3f;
+        --border: #424245;
+        --text-primary: #f5f5f7;
+        --text-secondary: #86868b;
+        --text-tertiary: #636366;
+        --accent: #0a84ff;
+        --accent-hover: #409cff;
+        --selected-bg: rgba(10, 132, 255, 0.15);
+        --selected-border: #0a84ff;
+      }
+    }
+
+    /* --- page skeleton: fixed header bar, scrolling body --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      display: flex;
+      flex-direction: column;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+    }
+    .header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 1rem;
+      align-items: center;
+      flex-shrink: 0;
+      min-height: 42px;
+      padding: 0.5rem 1.5rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .header span { font-size: 0.75rem; color: var(--text-secondary); }
+    .header .selected-text { color: var(--accent); font-weight: 500; }
+    .main { flex: 1; overflow-y: auto; }
+    #frame-content { min-height: 100%; padding: 2rem; }
+
+    /* --- header contents: version badge on the left, live status on the right --- */
+    .brand { display: flex; align-items: center; min-width: 0; overflow: hidden; line-height: 1; color: var(--text-secondary); }
+    .brand a { display: flex; align-items: center; gap: 0.5rem; min-width: 0; max-width: 100%; line-height: 1; color: inherit; text-decoration: none; }
+    .brand-copy { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1; transform: translateY(-1px); }
+    .brand-logo { display: block; flex-shrink: 0; width: auto; height: 1em; max-width: 180px; filter: invert(1); }
+    @media (prefers-color-scheme: dark) { .brand-logo { filter: none; } }
+    .header .brand { justify-self: start; width: 100%; font-size: 0.75rem; line-height: 1; }
+    /* helper.js sets --status-color and the text as the socket comes and goes */
+    .status { display: flex; align-items: center; gap: 0.4rem; justify-self: end; white-space: nowrap; line-height: 1; font-size: 0.7rem; color: var(--status-color, var(--success)); }
+    .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--status-color, var(--success)); }
+    .header .status { grid-column: 2; line-height: 1; }
+
+    /* --- text blocks --- */
+    h2 { margin-bottom: 0.5rem; font-size: 1.5rem; font-weight: 600; }
+    h3 { margin-bottom: 0.25rem; font-size: 1.1rem; font-weight: 600; }
+    .subtitle { margin-bottom: 1.5rem; color: var(--text-secondary); }
+    .section { margin-bottom: 2rem; }
+    .label { margin-bottom: 0.5rem; font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); }
+
+    /* --- lettered choice list (.options > .option) --- */
+    .options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .option:hover { border-color: var(--accent); }
+    .option.selected { background: var(--selected-bg); border-color: var(--selected-border); }
+    .option .letter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+    }
+    .option.selected .letter { color: white; background: var(--accent); }
+    .option .content { flex: 1; }
+    .option .content h3 { margin-bottom: 0.15rem; font-size: 0.95rem; }
+    .option .content p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+
+    /* --- picture cards for comparing looks (.cards > .card) --- */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card {
+      overflow: hidden;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card.selected { border-color: var(--selected-border); border-width: 2px; }
+    .card-image { display: flex; align-items: center; justify-content: center; aspect-ratio: 16/10; background: var(--bg-tertiary); }
+    .card-body { padding: 1rem; }
+    .card-body h3 { margin-bottom: 0.25rem; }
+    .card-body p { font-size: 0.85rem; color: var(--text-secondary); }
+
+    /* --- captioned frame around one design, and two of them side by side --- */
+    .mockup {
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .mockup-header {
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border);
+    }
+    .mockup-body { padding: 1.5rem; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+
+    /* --- two-column trade-off box --- */
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .pros, .cons { padding: 1rem; border-radius: 8px; background: var(--bg-secondary); }
+    .pros h4, .cons h4 { margin-bottom: 0.5rem; font-size: 0.85rem; }
+    .pros h4 { color: var(--success); }
+    .cons h4 { color: var(--error); }
+    .pros ul, .cons ul { margin-left: 1.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+    .pros li, .cons li { margin-bottom: 0.25rem; }
+
+    /* --- wireframe pieces --- */
+    .placeholder {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-tertiary);
+      background: var(--bg-tertiary);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+    }
+    .mock-nav { display: flex; gap: 1.5rem; padding: 0.75rem 1rem; font-size: 0.9rem; color: white; background: var(--accent); }
+    .mock-sidebar { min-width: 180px; padding: 1rem; background: var(--bg-tertiary); }
+    .mock-content { flex: 1; padding: 1.5rem; }
+    .mock-button { padding: 0.5rem 1rem; font-size: 0.85rem; color: white; background: var(--accent); border: none; border-radius: 6px; }
+    .mock-input { width: 100%; padding: 0.5rem; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <!-- BRANDING -->
+    <div class="status">Connecting…</div>
+  </div>
+
+  <div class="main">
+    <div id="frame-content">
+      <!-- CONTENT -->
+    </div>
+  </div>
+</body>
+</html>

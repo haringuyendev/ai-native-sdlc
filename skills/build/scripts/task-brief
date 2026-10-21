@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# task-brief PLAN_FILE TASK_NUMBER [OUTFILE]
+#
+# Copies the section of one task out of a plan into its own file. The
+# implementer opens that file directly, so the task text never travels
+# through the controller's context.
+#
+# Without OUTFILE the brief is written as task-<N>-brief.md inside the
+# plan's workspace (the folder sdd-workspace prints). That location is
+# scoped per plan and per checkout; two runs of one plan in one checkout
+# write the same file.
+#
+# Exit codes: 2 bad usage or missing plan, 3 no such task in the plan.
+set -euo pipefail
+
+if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+  echo "usage: task-brief PLAN_FILE TASK_NUMBER [OUTFILE]" >&2
+  exit 2
+fi
+
+plan=$1
+task=$2
+if [ ! -f "$plan" ]; then
+  echo "no such plan file: $plan" >&2
+  exit 2
+fi
+
+if [ $# -eq 3 ]; then
+  brief=$3
+else
+  # Run the sibling through bash: some unpackers (Python's zipfile, for one)
+  # lose the executable bit when a plugin is installed (#2040).
+  here=$(cd "$(dirname "$0")" && pwd)
+  brief="$("${BASH:-bash}" "$here/sdd-workspace" "$plan")/task-${task}-brief.md"
+fi
+
+# The section opens at a heading "Task <N>" of any level and runs until the
+# next heading of another task or the next level-1/level-2 heading. Lines
+# inside ``` fences are never treated as headings.
+awk -v want="$task" '
+  /^```/ { fenced = !fenced }
+  fenced { if (keep) print; next }
+  /^##?[ \t]/ { keep = 0 }
+  /^#+[ \t]+Task[ \t]+[0-9]+/ { keep = ($0 ~ ("^#+[ \t]+Task[ \t]+" want "([^0-9]|$)")) }
+  keep { print }
+' "$plan" > "$brief"
+
+if [ ! -s "$brief" ]; then
+  echo "task ${task} not found in ${plan} (no heading matching 'Task ${task}')" >&2
+  exit 3
+fi
+
+echo "wrote ${brief}: $(wc -l < "$brief" | tr -d ' ') lines"

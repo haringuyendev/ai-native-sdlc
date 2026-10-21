@@ -1,0 +1,11 @@
+{
+  "name": "ai-native-sdlc",
+  "plugins": [
+    {
+      "name": "ai-native-sdlc",
+      "source": { "source": "local", "path": "./" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

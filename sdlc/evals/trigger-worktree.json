@@ -1,0 +1,14 @@
+{
+  "name": "trigger-worktree",
+  "description": "Prompt này phải kích hoạt skill worktree đầu tiên; check fail nếu mô tả skill bị sai hoặc routing hỏng.",
+  "source": "trigger",
+  "prompt": "Tạo môi trường làm việc riêng cho change này trước khi code",
+  "max_turns": 3,
+  "allowed_tools": "Read,Glob,Grep,Skill",
+  "checks": [
+    {
+      "type": "skill_first",
+      "skill": "ai-native-sdlc:worktree"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "trigger-run",
+  "description": "Prompt này phải kích hoạt skill run đầu tiên; check fail nếu mô tả skill bị sai hoặc routing hỏng.",
+  "source": "trigger",
+  "prompt": "Tự làm plan này trong session, không dùng subagent",
+  "max_turns": 3,
+  "allowed_tools": "Read,Glob,Grep,Skill",
+  "checks": [
+    {
+      "type": "skill_first",
+      "skill": "ai-native-sdlc:run"
+    }
+  ]
+}

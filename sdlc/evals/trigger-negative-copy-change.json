@@ -1,0 +1,14 @@
+{
+  "name": "trigger-negative-copy-change",
+  "description": "Đối chứng âm: sửa chữ nút là việc nhỏ, skill intent không được gọi; check fail nếu mô tả skill intent khớp quá rộng.",
+  "source": "trigger",
+  "prompt": "Đổi chữ nút \"Gửi\" thành \"Gửi đơn\"",
+  "max_turns": 3,
+  "allowed_tools": "Read,Glob,Grep,Skill",
+  "checks": [
+    {
+      "type": "skill_never",
+      "skill": "ai-native-sdlc:intent"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "trigger-build",
+  "description": "Prompt này phải kích hoạt skill build đầu tiên; check fail nếu mô tả skill bị sai hoặc routing hỏng.",
+  "source": "trigger",
+  "prompt": "Plan đã duyệt, triển khai bằng subagent từng task",
+  "max_turns": 3,
+  "allowed_tools": "Read,Glob,Grep,Skill",
+  "checks": [
+    {
+      "type": "skill_first",
+      "skill": "ai-native-sdlc:build"
+    }
+  ]
+}

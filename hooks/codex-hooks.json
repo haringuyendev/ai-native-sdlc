@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [{ "type": "command", "command": "node \"${PLUGIN_ROOT}/hooks/run.mjs\" --agent codex --event session-start" }]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(apply_patch|Edit|Write)$",
+        "hooks": [{ "type": "command", "command": "node \"${PLUGIN_ROOT}/hooks/run.mjs\" --agent codex --event pre-edit" }]
+      },
+      {
+        "matcher": "^Bash$",
+        "hooks": [{ "type": "command", "command": "node \"${PLUGIN_ROOT}/hooks/run.mjs\" --agent codex --event pre-bash" }]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "node \"${PLUGIN_ROOT}/hooks/run.mjs\" --agent codex --event stop" }]
+      }
+    ]
+  }
+}

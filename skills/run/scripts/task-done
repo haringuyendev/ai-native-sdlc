@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Arguments: the plan file, the task number, BASE, a literal --, then the
+# test command with its own arguments.
+#
+# Closes a task for the inline executor. Runs the test command, saves all
+# of its output as task-<N>-tests.log in the plan's workspace, shows the
+# last five lines, and writes the ledger's completion line for the task.
+# The ledger is touched only on a zero exit; a red run leaves no trace
+# there and the script exits with the test command's own status.
+#
+# BASE is the SHA that task-start reported. The recorded range is
+# BASE..HEAD, both abbreviated to seven characters.
+set -euo pipefail
+
+usage() {
+  echo "usage: task-done PLAN_FILE TASK_NUMBER BASE -- TEST_COMMAND [ARGS...]" >&2
+  exit 2
+}
+[ $# -ge 5 ] || usage
+[ "$4" = "--" ] || usage
+
+plan_file=$1
+task_no=$2
+base_ref=$3
+shift 4
+
+if ! git rev-parse --verify --quiet "$base_ref" >/dev/null; then
+  echo "bad BASE: $base_ref" >&2
+  exit 2
+fi
+
+build_scripts="$(cd "$(dirname "$0")/../../build/scripts" && pwd)"
+workspace=$("${BASH:-bash}" "$build_scripts/sdd-workspace" "$plan_file")
+test_log="$workspace/task-${task_no}-tests.log"
+ledger_file="$workspace/ledger.md"
+
+# Show the command as someone would type it: an argument holding spaces,
+# quotes or shell operators gets single quotes.
+shown=""
+for word in "$@"; do
+  case "$word" in
+    *[[:space:]\"\;\|\&]*) word="'$word'" ;;
+  esac
+  shown="${shown:+$shown }$word"
+done
+
+status=0
+"$@" >"$test_log" 2>&1 || status=$?
+
+tail -n 5 "$test_log"
+
+if [ "$status" -ne 0 ]; then
+  echo "task-done: test command exited $status; Task $task_no NOT recorded (full output: $test_log)" >&2
+  exit "$status"
+fi
+
+# The result shown in the ledger is the last line that is not blank.
+summary=$(grep -v '^[[:space:]]*$' "$test_log" | tail -n 1) || summary="(no output)"
+
+if [ ! -f "$ledger_file" ]; then
+  printf '# SDD ledger — plan: %s\n' "$plan_file" >"$ledger_file"
+fi
+
+from=$(git rev-parse --short=7 "$base_ref")
+to=$(git rev-parse --short=7 HEAD)
+entry="Task $task_no: complete (commits $from..$to, tests: $shown → $summary)"
+printf '%s\n' "$entry" >>"$ledger_file"
+echo "ledger: $entry"

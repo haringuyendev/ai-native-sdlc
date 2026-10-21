@@ -1,0 +1,18 @@
+{
+  "artifactDirectoryPath": "/home/user/.gemini/antigravity-cli/brain/b91eb8fd-d591-46ca-a60a-318b53ba3673",
+  "conversationId": "b91eb8fd-d591-46ca-a60a-318b53ba3673",
+  "modelName": "claude-sonnet-4-6",
+  "stepIdx": 12,
+  "toolCall": {
+    "args": {
+      "CommandLine": "echo first",
+      "WaitMsBeforeAsync": 5000,
+      "toolSummary": "Echo first"
+    },
+    "name": "run_command"
+  },
+  "transcriptPath": "/home/user/.gemini/antigravity-cli/brain/b91eb8fd-d591-46ca-a60a-318b53ba3673/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "/repo"
+  ]
+}

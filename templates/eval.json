@@ -1,0 +1,9 @@
+{
+  "name": "example-task",
+  "description": "Giữ hành vi: sau khi xử lý task này, npm test phải pass. Check command fail nếu agent sửa sai hoặc bỏ dở.",
+  "source": "task",
+  "prompt": "<mô tả task thật>",
+  "max_turns": 10,
+  "allowed_tools": "Read,Edit,Bash(npm test)",
+  "checks": [{ "type": "command", "run": "npm test" }]
+}

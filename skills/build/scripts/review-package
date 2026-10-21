@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# review-package PLAN_FILE BASE HEAD [OUTFILE]
+#
+# Writes everything a reviewer needs for the range BASE..HEAD into a single
+# file: the commits, a per-file stat, and the net diff with ten lines of
+# context. Pass the BASE recorded before the task started, never HEAD~1, so
+# that a task made of several commits is reviewed as one change.
+#
+# Without OUTFILE the package is written as review-<base7>..<head7>.diff
+# inside the plan's workspace (the folder sdd-workspace prints). The name
+# carries the range, so the re-review after a fix round gets a new file
+# instead of overwriting the earlier one.
+#
+# Exit codes: 2 bad usage, plan or revision; 3 a range that cannot be right.
+set -euo pipefail
+
+if [ $# -lt 3 ] || [ $# -gt 4 ]; then
+  echo "usage: review-package PLAN_FILE BASE HEAD [OUTFILE]" >&2
+  exit 2
+fi
+
+plan=$1
+from=$2
+to=$3
+if [ ! -f "$plan" ]; then
+  echo "no such plan file: $plan" >&2
+  exit 2
+fi
+
+if ! git rev-parse --verify --quiet "$from" >/dev/null; then
+  echo "bad BASE: $from" >&2
+  exit 2
+fi
+if ! git rev-parse --verify --quiet "$to" >/dev/null; then
+  echo "bad HEAD: $to" >&2
+  exit 2
+fi
+
+# A HEAD taken from the wrong branch gives a range that is either not rooted
+# at BASE or holds no commits. Both would yield a package that looks valid
+# and reviews the wrong thing, so refuse them.
+if ! git merge-base --is-ancestor "$from" "$to"; then
+  echo "HEAD is not a descendant of BASE: ${from}..${to}" >&2
+  exit 3
+fi
+count=$(git rev-list --count "${from}..${to}")
+if [ "$count" -eq 0 ]; then
+  echo "empty commit range: ${from}..${to}" >&2
+  exit 3
+fi
+
+if [ $# -eq 4 ]; then
+  package=$4
+else
+  # Run the sibling through bash: some unpackers (Python's zipfile, for one)
+  # lose the executable bit when a plugin is installed (#2040).
+  here=$(cd "$(dirname "$0")" && pwd)
+  workspace=$("${BASH:-bash}" "$here/sdd-workspace" "$plan")
+  package="$workspace/review-$(git rev-parse --short "$from")..$(git rev-parse --short "$to").diff"
+fi
+
+range="${from}..${to}"
+{
+  printf '# Review package: %s\n\n' "$range"
+  printf '## Commits\n'
+  git log --oneline "$range"
+  printf '\n## Files changed\n'
+  git diff --stat "$range"
+  printf '\n## Diff\n'
+  git diff -U10 "$range"
+} > "$package"
+
+echo "wrote ${package}: ${count} commit(s), $(wc -c < "$package" | tr -d ' ') bytes"

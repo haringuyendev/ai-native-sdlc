@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# task-start PLAN_FILE TASK_NUMBER
+#
+# Opens a task for the inline executor. Two facts come back from a single
+# call so the session spends one turn, not two:
+#   brief: <file holding this task's section of the plan>
+#   base: <SHA of HEAD right now; the task's commit range starts here>
+#
+# The brief is cut by build's task-brief, so it lands in the same per-plan
+# workspace that build uses and either executor can pick the plan up.
+set -euo pipefail
+
+if [ $# -ne 2 ]; then
+  echo "usage: task-start PLAN_FILE TASK_NUMBER" >&2
+  exit 2
+fi
+
+plan_file=$1
+task_no=$2
+build_scripts="$(cd "$(dirname "$0")/../../build/scripts" && pwd)"
+
+# Invoke through bash: an install may have dropped the executable bit.
+report=$("${BASH:-bash}" "$build_scripts/task-brief" "$plan_file" "$task_no")
+
+# task-brief answers "wrote <path>: <count> lines"; keep only <path>.
+brief_path=$(printf '%s\n' "$report" | sed -n 's/^wrote \(.*\): [0-9][0-9]* lines$/\1/p')
+if [ -z "$brief_path" ]; then
+  echo "task-brief did not report a path: $report" >&2
+  exit 1
+fi
+
+printf 'brief: %s\n' "$brief_path"
+printf 'base: %s\n' "$(git rev-parse HEAD)"

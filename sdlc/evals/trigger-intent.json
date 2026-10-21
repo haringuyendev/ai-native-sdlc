@@ -1,0 +1,14 @@
+{
+  "name": "trigger-intent",
+  "description": "Prompt này phải kích hoạt skill intent đầu tiên; check fail nếu mô tả skill bị sai hoặc routing hỏng.",
+  "source": "trigger",
+  "prompt": "Tôi muốn thêm chức năng xuất hóa đơn PDF cho khách hàng",
+  "max_turns": 3,
+  "allowed_tools": "Read,Glob,Grep,Skill",
+  "checks": [
+    {
+      "type": "skill_first",
+      "skill": "ai-native-sdlc:intent"
+    }
+  ]
+}

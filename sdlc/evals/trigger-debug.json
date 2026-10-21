@@ -1,0 +1,14 @@
+{
+  "name": "trigger-debug",
+  "description": "Prompt này phải kích hoạt skill debug đầu tiên; check fail nếu mô tả skill bị sai hoặc routing hỏng.",
+  "source": "trigger",
+  "prompt": "npm test đang fail ở changes.test.mjs, không rõ vì sao",
+  "max_turns": 3,
+  "allowed_tools": "Read,Glob,Grep,Skill",
+  "checks": [
+    {
+      "type": "skill_first",
+      "skill": "ai-native-sdlc:debug"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+node_modules/
+.DS_Store
+.ai-sdlc/
+.worktrees/
+.hcom/

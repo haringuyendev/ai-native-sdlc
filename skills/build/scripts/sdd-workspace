@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# sdd-workspace PLAN_FILE
+#
+# Prints the absolute path of the scratch folder that subagent-driven
+# execution keeps for a single plan, creating it on first use. Briefs,
+# implementer reports, review packages and ledger.md all live there.
+#
+# Layout: <repo-root>/.ai-sdlc/sdd/<key>/
+#   <key> is the plan's file name without .md. A plan called plan.md or
+#   progress.md (a bounded change) sits in a change folder, so the folder
+#   name is the key instead: sdlc/changes/<slug>/plan.md -> .ai-sdlc/sdd/<slug>/
+#
+# Why one folder per plan: a later plan in the same checkout must never pick
+# up an earlier plan's ledger. A controller that mistakes an old ledger for
+# its own progress skips tasks it never ran.
+#
+# Ownership: each folder holds a plan-path file naming the plan that owns it
+# (repo-relative for plans inside the repo, absolute for plans outside).
+# Two plans with the same file name (docs/a/plan-x.md, docs/b/plan-x.md) would
+# want the same key; the second one falls back to <key>-<parent folder>, then
+# <key>-<parent folder>-2, -3, and so on. A folder without plan-path comes
+# from before the marker existed and is claimed by whichever plan asks first,
+# so older in-flight folders keep working. That can adopt instead of noticing
+# a clash, once; such folders disappear as their plans finish.
+#
+# Why the working tree and not .git/: agent permission layers treat .git/ as
+# protected, which would stop an implementer from writing its report there.
+# A .gitignore containing '*' at .ai-sdlc/ hides the whole tree from
+# `git status` and from commits without touching any tracked file.
+#
+# task-brief and review-package both call this script, so the location is
+# decided in exactly one place.
+set -euo pipefail
+
+if [ $# -ne 1 ]; then
+  echo "usage: sdd-workspace PLAN_FILE" >&2
+  exit 2
+fi
+
+plan_arg=$1
+if [ ! -f "$plan_arg" ]; then
+  echo "no such plan file: $plan_arg" >&2
+  exit 2
+fi
+
+# Physical folder of the plan, so every spelling of one plan path
+# (relative, absolute, with ..) ends up identical.
+plan_folder=$(CDPATH='' cd -- "$(dirname "$plan_arg")" && pwd -P)
+plan_file=$(basename "$plan_arg")
+stem=$(basename "$plan_arg" .md)
+
+case "$stem" in
+  plan|progress) key=$(basename "$plan_folder") ;;
+  *)             key=$stem ;;
+esac
+case "$key" in
+  ''|.|..) echo "cannot derive a workspace name from: $plan_arg" >&2; exit 2 ;;
+esac
+
+# Spell the repo root with pwd -P too. Git for Windows reports C:/... from
+# rev-parse but /c/... from pwd; the prefix test below needs one spelling.
+repo=$(CDPATH='' cd -- "$(git rev-parse --show-toplevel)" && pwd -P)
+sdd_root="$repo/.ai-sdlc/sdd"
+
+# The value stored in plan-path.
+full="$plan_folder/$plan_file"
+if [ "${full#"$repo"/}" != "$full" ]; then
+  marker=${full#"$repo"/}
+else
+  marker=$full
+fi
+
+# claim DIR: succeed when DIR belongs to this plan. A DIR with no marker
+# (brand new, or from before markers) is taken by writing ours into it.
+claim() {
+  local folder=$1
+  if [ ! -e "$folder/plan-path" ]; then
+    mkdir -p "$folder"
+    printf '%s\n' "$marker" > "$folder/plan-path"
+    return 0
+  fi
+  [ "$(cat "$folder/plan-path")" = "$marker" ]
+}
+
+parent_name=$(basename "$plan_folder")
+workspace="$sdd_root/$key"
+if ! claim "$workspace"; then
+  workspace="$sdd_root/$key-$parent_name"
+  if ! claim "$workspace"; then
+    i=2
+    until claim "$sdd_root/$key-$parent_name-$i"; do i=$((i + 1)); done
+    workspace="$sdd_root/$key-$parent_name-$i"
+  fi
+fi
+
+# Only ever create this file. A repo that commits its own version (say, to
+# keep ledgers under version control) must not have it reset on every call.
+mkdir -p "$repo/.ai-sdlc"
+if [ ! -e "$repo/.ai-sdlc/.gitignore" ]; then
+  printf '*\n' > "$repo/.ai-sdlc/.gitignore"
+fi
+
+CDPATH='' cd -- "$workspace" && pwd

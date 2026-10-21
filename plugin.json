@@ -1,0 +1,5 @@
+{
+  "name": "ai-native-sdlc",
+  "version": "1.2.0",
+  "description": "AI-Native SDLC harness: intent → spec → plan → build → review → lessons, with progress tracking and guardrail hooks"
+}
