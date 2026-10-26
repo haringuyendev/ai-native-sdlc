@@ -285,3 +285,14 @@ test('--foreground records the server pid so stop-server.sh stops it', async () 
     child.kill('SIGKILL');
   }
 });
+
+test('a project session under /tmp keeps its screens after stop', () => {
+  // Not realpath'd: on macOS /tmp resolves to /private/tmp and would hide the bug.
+  const root = execFileSync('mktemp', ['-d', '/tmp/vc-project-XXXXXX'], { encoding: 'utf8' }).trim();
+  gitInit(root);
+  const info = start(root);
+  const r = stop(root, info);
+  assert.equal(r.code, 0, r.out + r.err);
+  assert.ok(existsSync(join(info.state_dir, 'server-stopped')));
+  assert.ok(existsSync(info.screen_dir));
+});
