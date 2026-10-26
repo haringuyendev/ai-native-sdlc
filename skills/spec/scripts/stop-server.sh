@@ -9,7 +9,8 @@
 #                server-stopped written, server-info removed
 #   not_running  no pid file; nothing touched
 #   failed       process outlived SIGKILL; exit 1, nothing written
-# Only a session under /tmp is deleted afterwards; project sessions keep their screens.
+# Only a /tmp/brainstorm-* session is deleted afterwards; project sessions keep
+# their screens, even when the project itself lives under /tmp.
 
 SESSION_DIR="$1"
 if [[ -z "$SESSION_DIR" ]]; then
@@ -91,6 +92,6 @@ fi
 rm -f "$PID_FILE" "$ID_FILE" "$STATE_DIR/server.log"
 record_stop "stop-server.sh"
 case "$SESSION_DIR" in
-  /tmp/*) rm -rf "$SESSION_DIR" ;;
+  /tmp/brainstorm-*) rm -rf "$SESSION_DIR" ;;
 esac
 echo '{"status": "stopped"}'
