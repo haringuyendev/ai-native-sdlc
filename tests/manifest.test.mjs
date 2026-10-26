@@ -28,7 +28,7 @@ test('plugin, marketplace and package versions agree', () => {
   const v = readJson('package.json').version;
   assert.equal(readJson('.claude-plugin/plugin.json').version, v);
   assert.equal(readJson('.claude-plugin/marketplace.json').plugins[0].version, v);
-  assert.equal(v, '1.2.0');
+  assert.equal(v, '1.3.0');
 });
 
 test('codex manifest matches package name/version and points at codex hooks', () => {

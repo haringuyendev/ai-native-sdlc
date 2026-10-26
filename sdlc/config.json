@@ -2,6 +2,7 @@
   "verify": { "build": "", "test": "npm test", "lint": "" },
   "protected_paths": [],
   "test_globs": ["tests/**"],
-  "gates": [{ "pattern": "\\bgit\\b.*\\bpush\\b.*(\\s-f\\b|\\s--force\\b|\\s\\+\\S)", "reason": "Force push cần người dùng xác nhận.", "prefixes": [["git","push","--force"],["git","push","-f"],["git","push","--force-with-lease"]] }],
+  "gates": [],
+  "secret_scan": false,
   "handoff_log": true
 }

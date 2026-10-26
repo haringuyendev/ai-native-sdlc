@@ -61,8 +61,10 @@ test('checkSecrets still catches a real key after a placeholder match', () => {
   assert.match(checkSecrets(text), /secret_allow/);
 });
 
-test('default template gates: force push and prod deploy', () => {
-  const { gates } = JSON.parse(readFileSync(join(PLUGIN_ROOT, 'templates', 'config.json'), 'utf8'));
+test('README sample gates (Bật/tắt guardrail): force push and prod deploy', () => {
+  const readme = readFileSync(join(PLUGIN_ROOT, 'README.md'), 'utf8');
+  const block = /### Bật\/tắt guardrail[\s\S]*?```json\n("gates": \[[\s\S]*?\])\n```/.exec(readme)[1];
+  const { gates } = JSON.parse(`{${block}}`);
   const cfg = { ...DEFAULT_CONFIG, gates };
   for (const c of ['git push -f origin main', 'git push --force', 'git push origin +main', './deploy.sh production']) {
     assert.notEqual(checkGates(c, cfg), null, c);

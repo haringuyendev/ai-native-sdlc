@@ -175,12 +175,30 @@ Hook không bao giờ làm hỏng session: lỗi chỉ in ra stderr và cho qua,
 | `verify` | Lệnh `build`, `test`, `lint` mà skill `verify` chạy | `{}` |
 | `protected_paths` | Mảng glob cấm sửa (ví dụ `["infra/**", ".github/workflows/**"]`) | `[]` |
 | `test_globs` | Glob nhận diện file test cho `test_lock` | `**/*.test.*`, `**/*.spec.*`, `**/test_*.py`, `**/tests/**` |
-| `gates` | Mảng `{ "pattern": "<regex>", "reason": "...", "prefixes": [["git", "push", "--force"]] }` cho lệnh Bash cần xác nhận. `pattern` dùng cho Claude Code và agy; `prefixes` (tuỳ chọn, mảng tiền tố lệnh) sinh rules cho Codex | `[]` (mẫu của `init` có force push và deploy production) |
+| `gates` | Mảng `{ "pattern": "<regex>", "reason": "...", "prefixes": [["git", "push", "--force"]] }` cho lệnh Bash cần xác nhận. `pattern` dùng cho Claude Code và agy; `prefixes` (tuỳ chọn, mảng tiền tố lệnh) sinh rules cho Codex | `[]` (mẫu của `init` cũng `[]`) |
 | `secret_allow` | Glob được miễn kiểm secret | `[]` |
+| `secret_scan` | `false` để tắt quét secret khi ghi file | `true` (mẫu của `init` đặt `false`) |
 | `handoff_log` | `false` để tắt nhắc ghi Log của Stop hook | `true` |
 | `format_check` | `false` để tắt kiểm định dạng artifact khi dừng | `true` |
 
 Glob hỗ trợ `**`, `*`, `?`.
+
+### Bật/tắt guardrail
+
+Repo mới `init` không bị plugin chặn: không gate, không quét secret, `protected_paths` trống. Vẫn bật: nhắc ghi Log và kiểm định dạng artifact khi dừng (`handoff_log`, `format_check`), `test_lock` khi một change tự đặt `true`. Hook đọc lại config mỗi lần chạy, sửa xong là có hiệu lực.
+
+**Bật lại** trong `sdlc/config.json`: quét secret bằng `"secret_scan": true`; gate bằng cách chép hai gate mẫu dưới đây (giữ `prefixes` để Codex có rule), rồi chạy `node <plugin root>/scripts/sync-agent-files.mjs` để sinh `.codex/rules/ai-native-sdlc.rules`:
+
+```json
+"gates": [
+  { "pattern": "\\bgit\\b.*\\bpush\\b.*(\\s-f\\b|\\s--force\\b|\\s\\+\\S)", "reason": "Force push cần người dùng xác nhận.", "prefixes": [["git", "push", "--force"], ["git", "push", "-f"], ["git", "push", "--force-with-lease"]] },
+  { "pattern": "\\b(deploy|release)\\b.*\\b(prod|production)\\b", "reason": "Deploy production cần release manager duyệt." }
+]
+```
+
+**Tắt ở repo đã `init` từ trước** (bản cũ có gate và luôn quét secret): đặt `"gates": []` và `"secret_scan": false`; với Codex, xoá thêm `.codex/rules/ai-native-sdlc.rules` vì Codex đọc file này chứ không đọc config.
+
+**Agent vẫn hỏi trước lệnh như `rm`?** Đó là lớp quyền của chính agent, không phải plugin. Ví dụ với Claude Code, thêm vào `.claude/settings.json` của repo: `{ "permissions": { "allow": ["Bash(rm:*)"] } }`.
 
 ## Eval và lesson
 

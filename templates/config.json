@@ -2,11 +2,9 @@
   "verify": { "build": "", "test": "", "lint": "" },
   "protected_paths": [],
   "test_globs": ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/tests/**"],
-  "gates": [
-    { "pattern": "\\bgit\\b.*\\bpush\\b.*(\\s-f\\b|\\s--force\\b|\\s\\+\\S)", "reason": "Force push cần người dùng xác nhận.", "prefixes": [["git", "push", "--force"], ["git", "push", "-f"], ["git", "push", "--force-with-lease"]] },
-    { "pattern": "\\b(deploy|release)\\b.*\\b(prod|production)\\b", "reason": "Deploy production cần release manager duyệt." }
-  ],
+  "gates": [],
   "secret_allow": [],
+  "secret_scan": false,
   "handoff_log": true,
   "format_check": true
 }

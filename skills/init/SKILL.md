@@ -10,7 +10,7 @@ Templates live in `templates/` under the plugin root given in your session conte
 ## Checklist
 1. **Confirm the repo.** Must be a git repository at its root. If `sdlc/config.json` exists, stop: the harness is already set up — offer `/ai-native-sdlc:status` instead.
 2. **Discover verify commands.** Read package.json / Makefile / pyproject / build files. Propose build, test, lint and single-test commands; ask the user to confirm or correct them.
-3. **Ask for guardrails.** Ask which paths are generated or frozen (`protected_paths`) and which commands need human approval (`gates`); offer the defaults from `templates/config.json`. For each gate, also ask for `prefixes` (command-word prefixes such as `["git","push","--force"]`) so Codex, which cannot ask from a hook, gets an execpolicy rule.
+3. **Mention guardrails, do not interview.** Blocking guardrails (`gates`, the secret scan, `protected_paths`) are off by default; say so in one sentence and point to the README section "Bật/tắt guardrail". Only if the user wants them on, ask which paths are frozen and which commands need approval, take the sample gates verbatim from that README block (keep their `prefixes`, which give Codex an execpolicy rule since it cannot ask from a hook), and set `"secret_scan": true` if they want the secret scan.
 4. **Write `sdlc/config.json`** from the template with the confirmed values.
 5. **Create folders** `sdlc/changes/`, `sdlc/lessons/`, `sdlc/evals/`, each with a `.gitkeep`.
 6. **AGENTS.md and CLAUDE.md.** `AGENTS.md` is the root instruction file for Claude Code, Codex and Antigravity; `CLAUDE.md` is only the line `@AGENTS.md`.

@@ -22,6 +22,7 @@ export function preEdit(ev) {
     const reason = checkProtected(repoPath, config) ?? checkTestLock(repoPath, config, locked);
     if (reason) return { type: 'deny', reason };
   }
+  if (config.secret_scan === false) return { type: 'allow' };
   for (const f of ev.files) {
     if (allowed.has(f)) continue;
     const secret = checkSecrets(f.newText ?? '');

@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { makeRepo, progress, runHook } from './helpers.mjs';
+import { PLUGIN_ROOT, makeRepo, progress, runAgent, runHook } from './helpers.mjs';
 
 const CONFIG = JSON.stringify({
   protected_paths: ['src/gen/**'],
@@ -85,4 +86,44 @@ test('pre-bash stays silent for other commands', () => {
   assert.equal(r.code, 0);
   assert.equal(r.stderr, '');
   assert.equal(r.json, null);
+});
+
+const TOKEN = 'const k = "AKIA' + 'ABCDEFGHIJKLMNOP";';
+const tpl = readFileSync(join(PLUGIN_ROOT, 'templates', 'config.json'), 'utf8');
+
+test('pre-edit skips the secret scan when secret_scan is false', () => {
+  const root = makeRepo({ 'sdlc/config.json': JSON.stringify({ secret_scan: false }) });
+  assert.equal(runHook('pre-edit.mjs', edit(root, 'src/k.ts', TOKEN)).code, 0);
+});
+
+test('pre-edit still scans when secret_scan is anything but false', () => {
+  for (const v of ['false', 0, true]) {
+    const root = makeRepo({ 'sdlc/config.json': JSON.stringify({ secret_scan: v }) });
+    assert.equal(runHook('pre-edit.mjs', edit(root, 'src/k.ts', TOKEN)).code, 2, String(v));
+  }
+});
+
+test('secret_scan false keeps protected_paths and test_lock', () => {
+  const root = makeRepo({
+    'sdlc/config.json': JSON.stringify({ secret_scan: false, protected_paths: ['src/gen/**'] }),
+    'sdlc/changes/fix/progress.md': progress('stage: build\ntest_lock: true'),
+  });
+  assert.equal(runHook('pre-edit.mjs', edit(root, 'src/gen/a.ts')).code, 2);
+  assert.equal(runHook('pre-edit.mjs', edit(root, 'src/a.test.ts')).code, 2);
+});
+
+test('init template config lets secrets and force push through on every agent', () => {
+  const root = makeRepo({ 'sdlc/config.json': tpl });
+  assert.equal(runHook('pre-edit.mjs', edit(root, 'src/k.ts', TOKEN)).code, 0);
+  const bash = { cwd: root, tool_name: 'Bash', tool_input: { command: 'git push --force origin main' } };
+  assert.equal(runHook('pre-bash.mjs', bash).json, null);
+  const codex = runAgent('codex', 'pre-bash', { cwd: root, tool_input: { command: 'git push --force origin main' } });
+  assert.equal(codex.code, 0);
+  assert.doesNotMatch(codex.stdout, /deny/);
+});
+
+test('init template keeps handoff_log and format_check on', () => {
+  const cfg = JSON.parse(tpl);
+  assert.equal(cfg.handoff_log, true);
+  assert.equal(cfg.format_check, true);
 });
