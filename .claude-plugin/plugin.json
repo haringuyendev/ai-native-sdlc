@@ -1,7 +1,7 @@
 {
   "name": "ai-native-sdlc",
   "description": "AI-Native SDLC harness: intent → spec → plan → build → review → lessons, with progress tracking and guardrail hooks",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": { "name": "Hải", "email": "haringuyendev@gmail.com" },
   "license": "MIT",
   "keywords": ["sdlc", "harness", "workflow", "governance", "hooks"]
