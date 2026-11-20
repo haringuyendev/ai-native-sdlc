@@ -10,6 +10,9 @@ Author: <tên> (<vai trò>). Status: draft. Source: <idea | ticket <ID> | incide
 ## Affected users and systems
 <Nhóm người dùng, team, service/API bị ảnh hưởng.>
 
+## Current system
+<Hệ thống hiện tại đã có gì, có một phần, chưa có gì liên quan tới thay đổi này. Ghi sự thật đã kiểm tra, kèm file/change tham chiếu.>
+
 ## Constraints
 <Ràng buộc bắt buộc: bảo mật, dữ liệu cá nhân, hiệu năng, deadline, công nghệ.>
 

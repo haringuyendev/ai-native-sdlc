@@ -18,9 +18,11 @@ Interview your human partner until you can state what they want and the reason b
 flowchart TD
   A[Read progress.md + intent.md] --> B{approvals.intent, or a quick clear task?}
   B -- neither --> I[ai-native-sdlc:intent first]
-  B -- yes --> C{Request already says everything?}
-  C -- yes --> D[Do it, say what you did]
-  C -- no --> E[Opening message: skip line + one open question]
+  B -- yes --> R[Survey current system: what exists, partial, missing]
+  R --> C{Anything that matters still unknown or unverified?}
+  C -- no, quick clear task --> D[Do it, say what you did]
+  C -- no, bigger than that --> SZ
+  C -- yes --> E[Opening message: skip line + one question on the biggest gap]
   E --> F{They opt out?}
   F -- yes --> G[One line on how it gets made, then proceed; gate lifted]
   F -- no --> H[Interview: one question per message, playback chunks of 200-300 words]
@@ -47,24 +49,34 @@ flowchart TD
 ```
 
 ### 1. See where the change stands
-Open the change's `progress.md` and `intent.md`. When `approvals.intent` is missing and the request is not a quick, clear task, invoke `ai-native-sdlc:intent` before anything else. Otherwise take the intent's Open questions as your starting list of topics.
+Open the change's `progress.md` and `intent.md`. When `approvals.intent` is missing and the request is not a quick, clear task, invoke `ai-native-sdlc:intent` before anything else. Otherwise take the intent's Open questions as your starting list of topics, and treat everything intent.md and the conversation already state as settled: never ask it again.
 
-### 2. Decide whether a conversation is needed
-Ask yourself one thing: what do I actually know about what they want, and why?
-- The request already holds every decision that matters ("rename the Save button to Submit"): treat it as a quick, clear task. Make the change, report what you changed, and stop here; no change folder.
-- Something that matters is missing: go to step 3.
+### 2. Survey the system, then decide whether a conversation is needed
+Before any question, look at what exists. Read-only exploring is always allowed (see the gate in step 10), so do it without asking: the code, endpoints, tables and screens this change touches (use the code index or search the repo's `AGENTS.md` prescribes), the intent's Current system section, related changes under `sdlc/changes/` and `sdlc/lessons/`. Come away knowing what already exists, what is partial, what is missing, and anything that contradicts the request. Keep it targeted; only reaching outside the repo (the web, data the user owns elsewhere) needs their yes.
+
+Then sort every decision that matters for the design:
+
+| Pile | How to recognize it | What you do |
+|------|---------------------|-------------|
+| **Settled** | the user, intent.md or the survey already answers it | write it in; never ask it again, not even to confirm |
+| **Minor** | a sensible builder could settle it with no effect on what gets built | decide it, label it as your call |
+| **Ask** | it changes what gets built, and you are confused, the sources conflict, or you could not verify it | ask (step 3 onward) |
+
+- Ask pile empty and the request is a quick, clear task ("rename the Save button to Submit"): make the change, report what you changed, and stop here; no change folder.
+- Ask pile empty and the work is bigger: skip the interview, go to step 6 and write the design. Skipping questions never skips the written description or the approval gate.
+- Ask pile not empty: go to step 3, and ask only about that pile.
 
 ### 3. Send the opening message
 It has exactly two parts and nothing else:
 1. A single line telling them they can skip the questions and have you start straight away.
-2. A single open question that sets them talking about a concrete moment or picture, for example "What happened the day you decided this needed doing?" or "Picture it finished: what's the first thing you'd do with it?"
+2. A single question about the most important item in the Ask pile, tied to what you found ("The patient list already filters by department but not by ward; is ward the filter you need?"). Use a broad open question ("What happened the day you decided this needed doing?") only when you genuinely lack the picture, never when the request or intent already gives it.
 
 If they choose to skip: the skill ends here and the gate in step 10 goes with it. If you are making a significant choice about how it gets made (the platform, the language, the medium), state it in a single plain sentence, then carry out the request through the normal workflow.
 
 ### 4. Interview
 **Message shape.** Each message closes on exactly one question, a single sentence, never followed by a list of possible answers. Put the important part first and keep it short. If you looked into something, report the two or three findings that matter and offer the remainder.
 
-**What to learn.** Keep these areas in mind and fill them as the talk allows; do not recite them as questions:
+**What to learn.** Keep these areas in mind and fill only the ones still empty after the survey and what they told you; do not recite them as questions:
 
 | Area | What you want to come away with |
 |------|---------------------------------|
@@ -88,7 +100,7 @@ If they choose to skip: the skill ends here and the gate in step 10 goes with it
 | They are counting on you there | Pick sensible defaults and say them in plain words |
 | Something already exists | Build on what it already uses |
 | You make any of these choices | Write it into the design as your decision, never as theirs |
-| You have some grounding and looking would help | Offer recon of the code or project, files and data they own, or the web; name what you hope to find; go only on a yes |
+| A new question comes up that the project might answer | Look in the repo first, without asking; ask them only if looking does not settle it. Offer the web or data outside the repo, and go there only on a yes |
 | You are about to propose an approach | First, privately, sketch several, then cut the weak ones and every one that works against their stated reasons; show them a comparison only if it helps them choose |
 | Building would settle a question faster than talking | Offer a spike (below) |
 | The content is something to look at | Step 4a |
@@ -105,13 +117,13 @@ The companion is a browser tab for mockups, diagrams and clickable prototypes. I
 **Each question after that.** Route by what helps them understand: screens, arrangements and designs set next to each other go to the browser; scope, requirements, tradeoffs and abstract choices stay in text. A question that happens to be about a UI can still be a text question.
 
 ### 5. Play it back in chunks
-Questions and playback take turns until the end of the conversation, and the last chunk sweeps up whatever is still undescribed. A chunk is due whenever one part has become clear, say its audience and purpose, or how a single piece behaves.
+Play back only a part that rests on your inference or on something you could not verify; a part the user stated or the survey verified goes straight into the document without a confirmation round. A chunk is due whenever such a part has become clear, say its audience and purpose, or how a single piece behaves.
 
 Before sending a chunk:
 1. If it describes something they will look at (a printout, a page, a schedule, a screen) and the companion has not been offered, send the offer as its own message and keep the chunk for the following one. If they already accepted the companion, attach a mockup to the chunk.
 2. Keep it to roughly 200-300 words about that one part.
 3. Separate sources: what they told you is theirs, everything you inferred is flagged as your guess.
-4. Finish with a question about what is wrong or missing.
+4. Finish with a question about what is wrong or missing in your guesses.
 
 Then resume asking, now about the next part.
 
@@ -175,6 +187,7 @@ On approval: record `approvals.spec`, set `stage: plan` and `next: ai-native-sdl
 - Use their vocabulary and plain words, a notch above their level. No process jargon.
 - Never open with an explanation of how this skill works. It spends their attention before they have told you anything; the question is the explanation.
 - Ask for a description before you show choices. Once three options are on screen, people pick the nearest one instead of telling you what they actually pictured.
+- Never ask for what they already told you or what the system already shows. A repeated question tells them you were not listening; a question tied to what you found tells them you looked.
 - Say every default out loud. A default they never heard about resurfaces at review as a surprise, when changing it means rebuilding.
 
 **While writing it up**
